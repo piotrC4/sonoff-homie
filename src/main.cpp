@@ -25,10 +25,12 @@ HomieNode relayNode("relay01", "relay");
 bool relayStateHandler(String value) {
   if (value == "ON") {
     digitalWrite(PIN_RELAY, HIGH);
+    digitalWrite(PIN_LED, LOW);
     Homie.setNodeProperty(relayNode, "relayState", "ON");
     //Serial.println("Switch is on");
   } else if (value == "OFF") {
     digitalWrite(PIN_RELAY, LOW);
+    digitalWrite(PIN_LED, HIGH);
     Homie.setNodeProperty(relayNode, "relayState", "OFF");
     //Serial.println("Switch is off");
   } else {
@@ -43,7 +45,7 @@ bool relayTimerHandler(String value)
   if (value.toInt() > 0)
   {
     digitalWrite(PIN_RELAY, HIGH);
-
+    digitalWrite(PIN_LED, LOW);
     downCounterStart = millis();
     downCounterLimit = value.toInt()*1000;
     Homie.setNodeProperty(relayNode, "relayState", "ON");
@@ -86,6 +88,7 @@ void setupHandler()
     Homie.setNodeProperty(relayNode, "relayState", "OFF");
     Homie.setNodeProperty(relayNode, "relayInitMode", "0");
   }
+
 }
 
 // Homie loop handler
@@ -97,6 +100,7 @@ void loopHandler()
     {
       // Turn off relay
       digitalWrite(PIN_RELAY, LOW);
+      digitalWrite(PIN_LED, HIGH);
       Homie.setNodeProperty(relayNode, "relayState", "OFF");
       Homie.setNodeProperty(relayNode, "relayTimer", "0");
       downCounterLimit=0;
@@ -114,15 +118,19 @@ void setup()
   Serial.println();
   Serial.println();
   pinMode(PIN_RELAY, OUTPUT);
-  // Setup autoboot mode
+  pinMode(PIN_LED, OUTPUT);
+
   if (EEpromData.initialState==1)
   {
     digitalWrite(PIN_RELAY, HIGH);
+    digitalWrite(PIN_LED, LOW);
   } else {
     digitalWrite(PIN_RELAY, LOW);
+    digitalWrite(PIN_LED, HIGH);
     EEpromData.initialState==0;
   }
-  Homie.setFirmware("sonoff", "0.9");
+
+  Homie.setFirmware("sonoff", "0.10");
   Homie.setSetupFunction(setupHandler);
   Homie.setLoopFunction(loopHandler);
   Homie.setLedPin(PIN_LED, LOW);
