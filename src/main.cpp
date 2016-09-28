@@ -5,6 +5,7 @@
 
 #include <Homie.h>
 #include <EEPROM.h>
+#include <Bounce2.h>
 
 const int PIN_RELAY = 12;
 const int PIN_LED = 13;
@@ -13,13 +14,21 @@ const int PIN_BUTTON = 0;
 unsigned long downCounterStart;
 unsigned long downCounterLimit=0;
 
+unsigned long keepAliveReceived=0;
+int lastButtonValue = 1;
+
 // EEPROM structure
 struct EEpromDataStruct {
   int initialState; // 1 - ON, other - OFF
+  int keepAliveValue; // 0 - disabled, keepalive time - seconds
 };
+
 EEpromDataStruct EEpromData;
 
+Bounce debouncerButton = Bounce();
+
 HomieNode relayNode("relay01", "relay");
+HomieNode keepAliveNode("keepalive", "keepalive");
 
 // Event typu relay - manualne wymuszenie stanu
 bool relayStateHandler(String value) {
@@ -39,6 +48,32 @@ bool relayStateHandler(String value) {
   return true;
 }
 
+// Keepliave tick handler
+bool keepAliveTickHandler(String value)
+{
+  keepAliveReceived=millis();
+  return true;
+}
+
+// Keepalive mode
+bool keepAliveValueHandler(String value)
+{
+  int oldValue = EEpromData.keepAliveValue;
+  if (value.toInt() > 0)
+  {
+    EEpromData.keepAliveValue = value.toInt();
+  }
+  if (value=="0")
+  {
+    EEpromData.keepAliveValue = 0;
+  }
+  if (oldValue!=EEpromData.keepAliveValue)
+  {
+    EEPROM.put(0, EEpromData);
+    EEPROM.commit();
+  }
+}
+
 // Czasowe wymuszenie stanu
 bool relayTimerHandler(String value)
 {
@@ -55,6 +90,7 @@ bool relayTimerHandler(String value)
     return false;
   }
 }
+
 
 // Initial mode handler
 bool relayInitModeHandler(String value)
@@ -88,7 +124,9 @@ void setupHandler()
     Homie.setNodeProperty(relayNode, "relayState", "OFF");
     Homie.setNodeProperty(relayNode, "relayInitMode", "0");
   }
-
+  String outMsg = String(EEpromData.keepAliveValue);
+  Homie.setNodeProperty(keepAliveNode, "keepAliveValue", outMsg);
+  keepAliveReceived=millis();
 }
 
 // Homie loop handler
@@ -106,6 +144,25 @@ void loopHandler()
       downCounterLimit=0;
     }
   }
+  int buttonValue = debouncerButton.read();
+
+  if (buttonValue != lastButtonValue)
+  {
+    lastButtonValue = buttonValue;
+    int relayValue = digitalRead(PIN_RELAY);
+    if (buttonValue == HIGH)
+    {
+      relayStateHandler(!relayValue ? "ON" : "OFF");
+
+    }
+  }
+  debouncerButton.update();
+
+  // Check if keepalive is supported and expired
+  if (EEpromData.keepAliveValue != 0 && (millis() - keepAliveReceived) > EEpromData.keepAliveValue*1000 )
+  {
+    ESP.restart();
+  }
 }
 
 // Main setup
@@ -119,6 +176,10 @@ void setup()
   Serial.println();
   pinMode(PIN_RELAY, OUTPUT);
   pinMode(PIN_LED, OUTPUT);
+  pinMode(PIN_BUTTON, INPUT);
+	digitalWrite(PIN_BUTTON, HIGH);
+	debouncerButton.attach(PIN_BUTTON);
+	debouncerButton.interval(50);
 
   if (EEpromData.initialState==1)
   {
@@ -130,15 +191,18 @@ void setup()
     EEpromData.initialState==0;
   }
 
-  Homie.setFirmware("sonoff", "0.10");
+  Homie.setFirmware("sonoff", "0.12");
   Homie.setSetupFunction(setupHandler);
   Homie.setLoopFunction(loopHandler);
   Homie.setLedPin(PIN_LED, LOW);
-  Homie.setResetTrigger(PIN_BUTTON, LOW, 5000);
+  Homie.setResetTrigger(PIN_BUTTON, LOW, 10000);
   relayNode.subscribe("relayState", relayStateHandler);
   relayNode.subscribe("relayInitMode", relayInitModeHandler);
   relayNode.subscribe("relayTimer", relayTimerHandler);
+  keepAliveNode.subscribe("tick", keepAliveTickHandler);
+  keepAliveNode.subscribe("keepAliveValue",keepAliveValueHandler);
   Homie.registerNode(relayNode);
+  Homie.registerNode(keepAliveNode);
   Homie.setup();
 }
 
