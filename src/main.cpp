@@ -1,6 +1,9 @@
 /*
- * Homie for SonOff relay - with timer and initial state configuration
- *
+ * Homie for SonOff relay.
+ * Key features:
+ * - countdown timer
+ * - initial state configuration of relay
+ * - keepalive from server
  */
 
 #include <Homie.h>
@@ -165,6 +168,41 @@ void loopHandler()
   }
 }
 
+// Homie event
+void onHomieEvent(HomieEvent event) {
+  switch(event) {
+    case HOMIE_CONFIGURATION_MODE: // Default eeprom data in configuration mode
+      digitalWrite(PIN_RELAY, LOW);
+      EEpromData.initialState=0;
+      EEpromData.keepAliveValue = 0;
+      EEPROM.put(0, EEpromData);
+      EEPROM.commit();
+      break;
+    case HOMIE_NORMAL_MODE:
+      // Do whatever you want when normal mode is started
+      break;
+    case HOMIE_OTA_MODE:
+      // Do whatever you want when OTA mode is started
+      digitalWrite(PIN_RELAY, LOW);
+      break;
+    case HOMIE_ABOUT_TO_RESET:
+      // Do whatever you want when the device is about to reset
+      break;
+    case HOMIE_WIFI_CONNECTED:
+      // Do whatever you want when Wi-Fi is connected in normal mode
+      break;
+    case HOMIE_WIFI_DISCONNECTED:
+      // Do whatever you want when Wi-Fi is disconnected in normal mode
+      break;
+    case HOMIE_MQTT_CONNECTED:
+      // Do whatever you want when MQTT is connected in normal mode
+      break;
+    case HOMIE_MQTT_DISCONNECTED:
+      // Do whatever you want when MQTT is disconnected in normal mode
+      break;
+  }
+}
+
 // Main setup
 void setup()
 {
@@ -203,6 +241,7 @@ void setup()
   keepAliveNode.subscribe("keepAliveValue",keepAliveValueHandler);
   Homie.registerNode(relayNode);
   Homie.registerNode(keepAliveNode);
+  Homie.onEvent(onHomieEvent);
   Homie.setup();
 }
 
