@@ -59,7 +59,7 @@
   <td>Set Report of keepalive time in seconds, 0 - keep alive feature is not active</td>
 </tr>
 <tr>
-  <td>_HOMIE_PREFIX_/_node-id_/keepalive/tick/set<td>
+  <td>_HOMIE_PREFIX_/_node-id_/keepalive/tick/set</td>
   <td><code>.*</code></td>
   <td>Controller → Device</td>
   <td>Keepalive message from controller to gateway - if device will not receive during keepAliveValue time slot, it will reboot, keepalive is not active when keepAliveValue is equal 0</td>
