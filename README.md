@@ -5,6 +5,7 @@
 * Timer based relay
 * Configurable default (on boot) relay state - (MQTT independent)
 * Local button on/off
+* keepalive feature - device will reboot if not receive keepalive message in given time
 * All Homie buildin features (OTA,configuration)
 
 ## MQTT messages
@@ -57,7 +58,7 @@
   <td><code>\d+</code></td>
   <td>Controller → Device</td>
   <td>Set Report of keepalive time in seconds, 0 - keep alive feature is not active</td>
-</tr> 
+</tr>
 <tr>
   <td>_HOMIE_PREFIX_/_node-id_/keepalive/tick/set</td>
   <td><code>.*</code></td>
