@@ -16,6 +16,16 @@
 #define RELAY_OFF_STATE LOW
 #endif
 
+#ifdef SONOFFS20
+// sonoff
+#define PIN_RELAY 12
+#define PIN_LED 13
+#define PIN_BUTTON 0
+#define RELAY_ON_STATE HIGH
+#define RELAY_OFF_STATE LOW
+#endif
+
+
 #ifdef GENERICRELAY
 // esp01 generic relay with different pin configuration
 #define PIN_RELAY 2
@@ -46,7 +56,9 @@ Bounce debouncerButton = Bounce();
 HomieNode relayNode("relay01", "relay");
 HomieNode keepAliveNode("keepalive", "keepalive");
 HomieNode watchDogNode("watchdog", "Watchdog mode");
-
+#ifdef SONOFFS20
+HomieNode ledNode("led","led");
+#endif
 HomieSetting<bool> reverseMode("reverse mode", "Relay reverse mode");
 
 /*
@@ -98,7 +110,9 @@ bool relayStateHandler(const HomieRange& range, const String& value)
       digitalWrite(PIN_RELAY, RELAY_ON_STATE);
     }
     #ifdef PIN_LED
+    #ifdef SONOFF
     digitalWrite(PIN_LED, LOW);
+    #endif
     #endif
     relayNode.setProperty("relayState").send("ON");
   } else if (value == "OFF") {
@@ -109,7 +123,9 @@ bool relayStateHandler(const HomieRange& range, const String& value)
       digitalWrite(PIN_RELAY, RELAY_OFF_STATE);
     }
     #ifdef PIN_LED
+    #ifdef SONOFF
     digitalWrite(PIN_LED, HIGH);
+    #endif
     #endif
     relayNode.setProperty("relayState").send("OFF");
   } else {
@@ -177,6 +193,23 @@ bool relayTimerHandler(HomieRange range, String value)
 }
 
 /*
+ * Led node handler
+ */
+#ifdef SONOFFS20
+bool ledNodeHandler(HomieRange range, String message)
+{
+  if (message=="on" || message=="ON" || message=="1")
+  {
+    digitalWrite(PIN_LED, HIGH);
+  } else if (message=="off" || message=="OFF" || message=="0")
+  {
+    digitalWrite(PIN_LED, HIGH);
+  }
+  return true;
+}
+#endif
+
+/*
  * Initial mode handler
  */
 bool relayInitModeHandler(HomieRange range, String value)
@@ -224,6 +257,10 @@ void setupHandler()
   outMsg = EEpromData.watchDogTimeOut;
   watchDogNode.setProperty("timeOut").send(outMsg);
   keepAliveReceived=millis();
+  #ifdef SONOFFS20
+  digitalWrite(PIN_LED, LOW);
+  ledNode.setProperty("state").send("off");
+  #endif
 }
 
 
@@ -355,7 +392,6 @@ void setup()
     EEpromData.initialState=0;
   }
 
-
   Homie_setFirmware(FIRMWARE_NAME, FIRMWARE_VER);
   Homie.setSetupFunction(setupHandler);
   Homie.setLoopFunction(loopHandler);
@@ -375,6 +411,9 @@ void setup()
   watchDogNode.advertise("timeOut").settable(watchdogTimeOutHandler);
   keepAliveNode.advertise("tick").settable(keepAliveTickHandler);
   keepAliveNode.advertise("timeOut").settable(keepAliveTimeOutHandler);
+  #ifdef SONOFFS20
+  ledNode.advertise("state").settable(ledNodeHandler);
+  #endif
   Homie.onEvent(onHomieEvent);
   reverseMode.setDefaultValue(false).setValidator([] (bool candidate) {
     return (candidate >= 0) && (candidate <= 1);
