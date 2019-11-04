@@ -1,4 +1,4 @@
-[Homie](https://github.com/marvinroger/homie) based firmware for Sonoff Basic, Sonoff S20 wifi relay or any ESP8266 based relay.
+[Homie](https://github.com/homieiot/convention) based firmware for Sonoff Basic, Sonoff S20 wifi relay or any ESP8266 based relay.
 
 ## Features:
 * ON/OFF relay
@@ -12,7 +12,7 @@
 
 ## Build and upload
  * Attache module via USB-RS232 adapter
- * Set proper serial port number in plantformio.ini file (upload_port variable)
+ * Set proper serial port number in plantformio.ini file (upload_port variable) if required
  * reboot module into program mode
  * Flash module:
    * execute <code>pio run --target upload --environment sonoff</code> for SONOFF, <code>pio run --target upload --environment sonoffs20</code> for SONOFF S20 or <code>pio run --target upload --environment generic</code> for generic ESP8266

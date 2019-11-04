@@ -44,9 +44,9 @@ int lastButtonValue = 1;
 
 // EEPROM structure
 struct EEpromDataStruct {
-  int keepAliveTimeOut; // 0 - disabled, keepalive time - seconds
+  unsigned int keepAliveTimeOut; // 0 - disabled, keepalive time - seconds
   bool initialState;  // Initial state (just after boot - homie independet)
-  int watchDogTimeOut; // 0 - disabled, watchdog time limit - seconds
+  unsigned int watchDogTimeOut; // 0 - disabled, watchdog time limit - seconds
 };
 
 EEpromDataStruct EEpromData;
@@ -79,7 +79,7 @@ bool watchdogTickHandler(const HomieRange& range, const String& value)
  */
 bool watchdogTimeOutHandler(const HomieRange& range, const String& value)
 {
-  int oldValue = EEpromData.watchDogTimeOut;
+  unsigned int oldValue = EEpromData.watchDogTimeOut;
   if (value.toInt() > 15)
   {
     EEpromData.watchDogTimeOut = value.toInt();
@@ -96,6 +96,7 @@ bool watchdogTimeOutHandler(const HomieRange& range, const String& value)
     EEPROM.put(0, EEpromData);
     EEPROM.commit();
   }
+  return true;
 }
 /*
  *
@@ -148,7 +149,7 @@ bool keepAliveTickHandler(HomieRange range, String value)
  */
 bool keepAliveTimeOutHandler(HomieRange range, String value)
 {
-  int oldValue = EEpromData.keepAliveTimeOut;
+  unsigned int oldValue = EEpromData.keepAliveTimeOut;
   if (value.toInt() > 0)
   {
     EEpromData.keepAliveTimeOut = value.toInt();
@@ -164,6 +165,7 @@ bool keepAliveTimeOutHandler(HomieRange range, String value)
     EEPROM.put(0, EEpromData);
     EEPROM.commit();
   }
+  return false;
 }
 
 /*
@@ -310,11 +312,11 @@ void loopHandler()
   debouncerButton.update();
 
   // Check if keepalive is supported and expired
-  if (EEpromData.keepAliveTimeOut != 0 && (millis() - keepAliveReceived) > EEpromData.keepAliveTimeOut*1000 )
+  if (EEpromData.keepAliveTimeOut != (unsigned int)0 && (millis() - keepAliveReceived) > EEpromData.keepAliveTimeOut*1000 )
   {
     ESP.restart();
   }
-  if (watchDogCounterStart!=0 && EEpromData.watchDogTimeOut!=0 && (millis() - watchDogCounterStart) > EEpromData.watchDogTimeOut * 1000 )
+  if (watchDogCounterStart!=(unsigned int)0 && EEpromData.watchDogTimeOut!=0 && (millis() - watchDogCounterStart) > (unsigned long)(EEpromData.watchDogTimeOut * 1000 ))
   {
     HomieRange emptyRange;
     relayTimerHandler(emptyRange, "10"); // Disable relay for 10 sec
@@ -354,6 +356,22 @@ void onHomieEvent(const HomieEvent& event) {
     case HomieEventType::MQTT_DISCONNECTED:
       // Do whatever you want when MQTT is disconnected in normal mode
       break;
+    case HomieEventType::MQTT_PACKET_ACKNOWLEDGED:
+      break;
+    case HomieEventType::STANDALONE_MODE:
+      break;
+    case HomieEventType::OTA_PROGRESS:
+      break;
+    case HomieEventType::OTA_SUCCESSFUL:
+      break;
+    case HomieEventType::OTA_FAILED:
+      break;
+    case HomieEventType::MQTT_READY:
+      break;
+    case HomieEventType::READY_TO_SLEEP:
+      break;
+    case HomieEventType::SENDING_STATISTICS:
+      break;
   }
 }
 
@@ -363,7 +381,7 @@ void onHomieEvent(const HomieEvent& event) {
 void setup()
 {
   #ifdef SONOFF
-  Serial.begin(115200);
+  Serial.begin(CUST_SERIAL_SPEED);
   Serial.println("\n\n");
   #endif
   EEPROM.begin(sizeof(EEpromData));
