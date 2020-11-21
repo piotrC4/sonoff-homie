@@ -53,11 +53,11 @@ EEpromDataStruct EEpromData;
 
 Bounce debouncerButton = Bounce();
 
-HomieNode relayNode("relay01", "relay");
-HomieNode keepAliveNode("keepalive", "keepalive");
-HomieNode watchDogNode("watchdog", "Watchdog mode");
+HomieNode relayNode("relay01", "relay", "relay");
+HomieNode keepAliveNode("keepalive", "keepalive", "keepalive");
+HomieNode watchDogNode("watchdog", "Watchdog mode", "watchdog");
 #ifdef SONOFFS20
-HomieNode ledNode("led","led");
+HomieNode ledNode("led","led","led");
 #endif
 HomieSetting<bool> reverseMode("reverse mode", "Relay reverse mode");
 
